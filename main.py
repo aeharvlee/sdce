@@ -1,7 +1,10 @@
+from itertools import count
 from sys import argv
 import pandas as pd
 import argparse
 from datetime import datetime
+from IPython.display import display
+from tabulate import tabulate
 
 
 def parse():
@@ -49,8 +52,17 @@ def run(file_path, minimum_count, month):
                 return True
         return False
 
+    def remove_whitespace_at_name(name: str):
+        name.strip()
+
     filtered_df = month_df[month_df["Message"].apply(contains_auth)]
     counted_df = filtered_df.groupby("User").count()
+    counted_df = counted_df.drop("Message", axis=1)
+    trimmed_names = list()
+    for idx, row in counted_df.iterrows():
+        trimmed_names.append(idx.translate(str.maketrans("", "", " \n\t\r")))
+    counted_df = counted_df.reset_index()
+    counted_df["User"] = trimmed_names
 
     zero_auth_users = set(all_users) - set(counted_df.index)
     print(f"============NoAuth Users=============")
@@ -58,11 +70,17 @@ def run(file_path, minimum_count, month):
     print(f"=========================")
 
     print(f"============Under {minimum_count}=============")
-    print(counted_df[counted_df["Date"] < 10].to_markdown())
+    print(
+        tabulate(counted_df[counted_df["Date"] < 10], headers="keys", tablefmt="psql")
+    )
+    print(counted_df[counted_df["Date"] < 10].to_csv())
     print(f"=========================")
 
     print(f"============Successed Users=============")
-    print(counted_df[counted_df["Date"] >= 10].to_markdown())
+    print(
+        tabulate(counted_df[counted_df["Date"] >= 10], headers="keys", tablefmt="psql")
+    )
+    print(counted_df[counted_df["Date"] >= 10].to_csv())
     print(f"=========================")
 
 
